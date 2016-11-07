@@ -22,7 +22,23 @@ For the social network, data from Foursquare/Facebook or Twitter could be used. 
 
 The common data model should be a relational schema, MySQL? (debatable). 
 
-For each data source:
+For the data source(OpenStreetMap, Wikipedia):
 1. Create database table.
 2. Create extractor for loading data into database.
-********************************************************************************************************************************************
+
+For the OpenStreetMap data, load only the relevant entities into the database.
+For the Wikipedia data, load all articles into the database.
+
+Then merge together the two.
+
+*********************************** DATABASE ************************************************************************************************
+
+Requirements: Install the MySQL Python connector driver for your current system. For more info: https://dev.mysql.com/downloads/connector/python/
+
+The database class is a singleton class. It is located in the script database.py in the main folder of the project. Before using this class,
+one needs to fill out the dbConfig.cfg file, located in the same folder. 
+
+NOTE: DO NOT COMMIT THE CONFIGURATION FILE. That way, each contributor can have his own database parameters and credentials.
+
+
+*********************************************************************************************************************************************

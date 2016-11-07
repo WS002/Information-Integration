@@ -1,6 +1,14 @@
 #!/usr/bin/python
 # Need to use a streaming cursor approach to parse the XML data, due to it being too large to load it into a DOM Tree first and then traverse it. => Use SAX, which is event-based streaming cursor. Overload the ContentHandler class and its event functions startElement and endElement.
 import xml.sax
+import sys
+
+# Add the main folder to the python library, so that we can import our database singleton 
+sys.path.append('../')
+import database
+
+# Get instance of the database connection
+myDB = database.DBConnection()
 
 class Tag:
 	def __init__(self, k, v):
@@ -67,7 +75,11 @@ class XMLHandler( xml.sax.ContentHandler ):
 			print ""
 			if self.node.saveToDB == 1:				
 				print "End of node ", self.node.ID , " . Node contains tourism tag, save to DB!"
-				# save self.node class to DB
+				# save self.node class to DB	
+
+				# Do a bunch of insert statements into the db schema			
+				#myDB.executeQuery("INSERT INTO ", ("1",) )
+				
 			else:
 				print "End of node ", self.node.ID , " . Node contains NO tourism tag, DO NOT save to DB!" 
 	
