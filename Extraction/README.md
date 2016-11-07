@@ -11,8 +11,8 @@ The following values and more are described in detail here: http://wiki.openstre
 
 
 
-#Then for each POI name, get its corresponding article through the Wiki API:
+<!--Then for each POI name, get its corresponding article through the Wiki API:-->
 
-#https://de.wikipedia.org/w/api.php?action=opensearch&search=[articleName]&limit=1&format=xml
+<!--https://de.wikipedia.org/w/api.php?action=opensearch&search=[articleName]&limit=1&format=xml-->
 
-#This API call searches the wiki articles and retrieves the first closest match to the article name field. Could return also multiple articles if parameter limit > 1. The format is xml, but could be returned as an html page aswell
+<!--This API call searches the wiki articles and retrieves the first closest match to the article name field. Could return also multiple articles if parameter limit > 1. The format is xml, but could be returned as an html page aswell-->
