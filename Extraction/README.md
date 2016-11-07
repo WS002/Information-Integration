@@ -5,6 +5,7 @@ The open street map data has multiple nodes with different categories. We are co
 4. museum
 5. theme_park
 6. zoo
+7. view_point
 
 The following values and more are described in detail here: http://wiki.openstreetmap.org/wiki/Key:tourism
 
