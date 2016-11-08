@@ -37,6 +37,17 @@ Install dateutil module with pip:
  	sudo apt-get install python-pip
  	sudo pip install python-dateutil
 
+
+Schema for the OSM data:
+
+1. CREATE TABLE osm_nodes (ID INT NOT NULL PRIMARY KEY AUTO_INCREMENT,  lat DECIMAL(8,6) NOT NULL, lon DECIMAL (9,6) NOT NULL, timestamp TIMESTAMP NULL DEFAULT NULL );
+
+2. CREATE TABLE osm_tags (ID INT NOT NULL PRIMARY KEY AUTO_INCREMENT, node_id INT NOT NULL, k VARCHAR(255) NOT NULL, v VARCHAR(255) NOT NULL, FOREIGN KEY (node_id) REFERENCES osm_nodes(ID));
+
+Schema for the Wiki data:
+
+[ Insert Wiki schema here ]
+
 *********************************** DATABASE ************************************************************************************************
 
 Requirements: Install the MySQL Python connector driver for your current system. For more info: https://dev.mysql.com/downloads/connector/python/
