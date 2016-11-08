@@ -46,7 +46,7 @@ Schema for the OSM data:
 
 Schema for the Wiki data:
 
-1. CREATE TABLE wiki_articles ( ID INT NOT NULL PRIMARY KEY AUTO_INCREMENT, title VARCHAR(255) NOT NULL CHARACTER SET utf8 COLLATE utf8_general_ci, content mediumtext NOT NULL CHARACTER SET utf8 COLLATE utf8_general_ci);
+1. CREATE TABLE wiki_articles ( ID INT NOT NULL PRIMARY KEY AUTO_INCREMENT, title VARCHAR(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL, content MEDIUMTEXT CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL);
 
 *********************************** DATABASE ************************************************************************************************
 
