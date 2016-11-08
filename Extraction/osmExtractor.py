@@ -3,6 +3,12 @@
 import xml.sax
 import sys
 
+# Install dateutil module with pip:
+# sudo apt-get install python-pip
+# sudo pip install python-dateutil
+
+import dateutil.parser
+
 # Add the main folder to the python library, so that we can import our database singleton 
 sys.path.append('../')
 import database
@@ -16,11 +22,9 @@ class Tag:
 		self.v = v
 
 class Node:
-	def __init__(self, ID, lat, lon, ver, timestamp):
-		self.ID = ID
+	def __init__(self, lat, lon, timestamp):
 		self.lat = lat
 		self.lon = lon
-		self.ver = ver
 		self.timestamp = timestamp
 		# If the node contains a tag named tourism, save the whole node instance into the DB
 		self.saveToDB = 0
@@ -39,32 +43,17 @@ class XMLHandler( xml.sax.ContentHandler ):
 	def startElement(self, tag, attributes):
 		self.CurrentData = tag
 		if tag == "node":			
-			print ""
-			print "*****Node*****"
-
-			ID = attributes["id"]
-			print "ID:", ID
-			print ""
-
 			lat = attributes["lat"]
-			print "Lat:", lat
 			lon = attributes["lon"]
-			print "Lon:", lon
-			version = attributes["version"]
-			print "Version:", version
-			timestamp = attributes["timestamp"]
-			print "Timestamp:", timestamp
-			print ""
-			self.node = Node(ID, lat, lon, version, timestamp)
+			timestamp = yourdate = dateutil.parser.parse(attributes["timestamp"])
+			self.node = Node(lat, lon, timestamp)
 
 		elif tag == "tag":			
-			k = attributes["k"]
-			#Extract only tourism nodes
-			print "Key:", k			
+			k = attributes["k"]			
 			v = attributes["v"]
-			print "Value:", v
-			#save tag to nodeID = self.node
-			if k == "tourism":
+			#Extract only tourism nodes
+			possibleTourismValues = ('aquarium', 'attraction', 'gallery', 'museum', 'theme_park', 'zoo', 'view_point')
+			if k == "tourism" and v in possibleTourismValues:
 				self.node.saveToDB = 1
 			self.node.addTag(Tag(k, v))
 
@@ -72,16 +61,16 @@ class XMLHandler( xml.sax.ContentHandler ):
 	# Call when an elements ends
 	def endElement(self, tag):
 		if tag == "node":
-			print ""
 			if self.node.saveToDB == 1:				
-				print "End of node ", self.node.ID , " . Node contains tourism tag, save to DB!"
+				print "End of node. Node contains tourism tag with the right values, save to DB!"
 				# save self.node class to DB	
 
 				# Do a bunch of insert statements into the db schema			
-				#myDB.executeQuery("INSERT INTO ", ("1",) )
-				
-			else:
-				print "End of node ", self.node.ID , " . Node contains NO tourism tag, DO NOT save to DB!" 
+				cursor = myDB.executeQuery("INSERT INTO osm_nodes (lat, lon, timestamp) VALUES (%s, %s, %s)", (self.node.lat, self.node.lon, self.node.timestamp) )
+				nodeID = cursor.lastrowid
+				for tag in self.node.tags:
+					myDB.executeQuery("INSERT INTO osm_tags (node_id, k, v) VALUES (%s, %s, %s)", (nodeID, tag.k, tag.v) )
+							
 	
 
 if ( __name__ == "__main__"):

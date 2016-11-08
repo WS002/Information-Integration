@@ -36,8 +36,9 @@ class DBConnection:
 	# If argument list consists of only ONE element, one needs to append a ',' at the end, so that it is recognized as a tuple
 	# So e.g. ... argumentList = (1,) 	
 	def executeQuery(self, query, argumentList):		
-		iterator = self.cursor.execute(query, argumentList)
+		self.cursor.execute(query, argumentList)
 		# If the query is a select statement use the cursor should contain a list of all result values. Try cursor.fetchAll().
+		self.conn.commit()
 		return self.cursor
 
 	def __del__(self):

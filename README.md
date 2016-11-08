@@ -31,6 +31,12 @@ For the Wikipedia data, load all articles into the database.
 
 Then merge together the two.
 
+The osmExtractor.py file requires the following python module in order to run:
+
+Install dateutil module with pip:
+ 	sudo apt-get install python-pip
+ 	sudo pip install python-dateutil
+
 *********************************** DATABASE ************************************************************************************************
 
 Requirements: Install the MySQL Python connector driver for your current system. For more info: https://dev.mysql.com/downloads/connector/python/
