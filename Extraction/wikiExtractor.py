@@ -23,6 +23,8 @@ class XMLHandler(xml.sax.ContentHandler):
         self.state = "none"
         self.maxlen = 0
         self.articlecounter = 0
+        self.skipcounter = 0
+        self.all = 0
 
     # Call when an element starts
     def startElement(self, tag, attributes):
@@ -43,15 +45,33 @@ class XMLHandler(xml.sax.ContentHandler):
             # Call when an elements ends
 
     def endElement(self, tag):
+        global realfile
         self.xmlpath.pop()
         if  self.state == "content":
             self.state = "none"
-            try:
-                myDB.executeQuery("INSERT INTO wiki_articles (title, content) VALUES (%s, %s)", (self.title, self.content))
-                print 'Saved article "%s" to DB' % self.title
-            except Exception as e:
-                print 'Article "%s" caused an error:' % self.title, e
+            worseword = False
+            dppos =  self.title.find(":")
+            if dppos > -1:
+                head = self.title[:dppos]
+                for ww in ("Diskussion","Kategorie","Benutzer","Wikipedia","Vorlage","Datei","Portal","MediaWiki","Modul","Hilfe"):
+                    if head.endswith(ww):
+                        worseword = True
+                        break
+            archive = self.title.find("/Archiv") + 1
+            if worseword or archive:
+                self.skipcounter += 1
+                self.all += 1
+            else:
+                self.articlecounter += 1
+                self.all += 1
+                try:
+                    myDB.executeQuery("INSERT INTO wiki_articles (title, content) VALUES (%s, %s)", (self.title, self.content))
+                #    print 'Saved article "%s" to DB' % self.title
+                except Exception as e:
+                    print 'Article "%s" caused an error:' % self.title, e
+            #print realfile.tell(), self.articlecounter, "(+ %d ~ %2.2f%%)" % (self.skipcounter, 100.0 * self.skipcounter / (self.all)), self.title
 
+realfile = None
 if (__name__ == "__main__"):
     # create an XMLReader
     parser = xml.sax.make_parser()
@@ -61,6 +81,8 @@ if (__name__ == "__main__"):
     Handler = XMLHandler()
     parser.setContentHandler(Handler)
 
+    filepath = "dewiki-20161101-pages-meta-current.xml.bz2"
+    realfile = bz2.BZ2File(filepath)
     start = datetime.now()
-    parser.parse(bz2.BZ2File("dewiki-20161101-pages-meta-current.xml.bz2"))
+    parser.parse(realfile)
     print "Passed file in", datetime.now() - start
