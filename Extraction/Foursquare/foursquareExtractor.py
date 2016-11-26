@@ -24,11 +24,21 @@ for tourismCat in possibleTourismValues:
 				if response != 0:
 					currentVenues = json.loads(response)['response']['venues']
 					for venue in currentVenues:
-						myDB.executeQuery("INSERT INTO foursquare_venues (name, lat, lng, categoryName, checkinsCount) VALUES (%s, %s, %s, %s, %s)", (venue['name'], venue['location']['lat'], venue['location']['lng'], tourismCat, venue['stats']['checkinsCount']) )
+						# Get description of venue
+						venueResponse = foursquareAPI.getVenue(venue['id'])
+						if venueResponse != 0:
+							venueDetails = json.loads(venueResponse)['response']['venue']						
+							if 'description' in venueDetails:								
+								myDB.executeQuery("INSERT INTO foursquare_venues (name, description, lat, lng, categoryName, checkinsCount) VALUES (%s, %s, %s, %s, %s, %s)", (venue['name'], venueDetails['description'], venue['location']['lat'], venue['location']['lng'], tourismCat, venue['stats']['checkinsCount']) )	
+							else:
+								myDB.executeQuery("INSERT INTO foursquare_venues (name, lat, lng, categoryName, checkinsCount) VALUES (%s, %s, %s, %s, %s)", (venue['name'], venue['location']['lat'], venue['location']['lng'], tourismCat, venue['stats']['checkinsCount']) )			
+						else:
+							continue
 					break
 			except Exception:
 				print "Error retrieving venues list... Retrying..."
 				continue
+
 
 
 

@@ -13,5 +13,7 @@ The foursquare venues schema looks like this:
 | lng           | decimal(9,6) | NO   |     | NULL    |                |
 | categoryName  | varchar(255) | NO   |     | NULL    |                |
 | checkinsCount | int(11)      | NO   |     | NULL    |                |
+| description   | text         | YES  |     | NULL    |                |
 +---------------+--------------+------+-----+---------+----------------+
+
 ```
