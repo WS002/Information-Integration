@@ -3,7 +3,7 @@ Change the category values from the options file, according to the need.
 The foursquare venues schema looks like this:
 
 
-
+```
 +---------------+--------------+------+-----+---------+----------------+
 | Field         | Type         | Null | Key | Default | Extra          |
 +---------------+--------------+------+-----+---------+----------------+
@@ -14,4 +14,4 @@ The foursquare venues schema looks like this:
 | categoryName  | varchar(255) | NO   |     | NULL    |                |
 | checkinsCount | int(11)      | NO   |     | NULL    |                |
 +---------------+--------------+------+-----+---------+----------------+
-
+```
