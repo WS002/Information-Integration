@@ -31,7 +31,6 @@ class Node:
 
 	def addTag(self, tag):
 		self.tags.append(tag)
-		self.saveToDB = 1;
 
 class XMLHandler( xml.sax.ContentHandler ):
 	def __init__(self):
