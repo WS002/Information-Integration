@@ -1,8 +1,7 @@
 import io, sys
 import urllib3, json
 import datetime
-import time
-import pytz
+
 
 # Needed to parse the config file
 import ConfigParser
@@ -43,6 +42,13 @@ class FoursquareAPI:
 
 	def getVenuesPerCategory(self, categoryId):
 		venueRequest = self.HTTPManager.request('GET', 'https://api.foursquare.com/v2/venues/search?near=' + self.options['city'] + '&radius='+self.options['radius']+ '&categoryId='+ categoryId +'&limit='+self.options['venue_limit']+'&intent=browse&client_id='+self.options['client_id'] + '&client_secret='+self.options['client_secret']+'&v=' + datetime.datetime.now().strftime('%Y%m%d'))
+		if venueRequest.status >= 400:
+			return 0
+		else:
+			return venueRequest.data
+
+	def getVenue(self, venueID):
+		venueRequest = self.HTTPManager.request('GET', 'https://api.foursquare.com/v2/venues/'+venueID+'?client_id='+self.options['client_id'] + '&client_secret='+self.options['client_secret']+'&v=' + datetime.datetime.now().strftime('%Y%m%d'))
 		if venueRequest.status >= 400:
 			return 0
 		else:

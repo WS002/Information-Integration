@@ -22,10 +22,9 @@ class Tag:
 		self.v = v
 
 class Node:
-	def __init__(self, lat, lon, timestamp):
+	def __init__(self, lat, lon):
 		self.lat = lat
 		self.lon = lon
-		self.timestamp = timestamp
 		# If the node contains a tag named tourism, save the whole node instance into the DB
 		self.saveToDB = 0
 		self.tags = []
@@ -45,8 +44,6 @@ class XMLHandler( xml.sax.ContentHandler ):
 		if tag == "node":			
 			lat = attributes["lat"]
 			lon = attributes["lon"]
-			timestamp = yourdate = dateutil.parser.parse(attributes["timestamp"])
-			self.node = Node(lat, lon, timestamp)
 
 		elif tag == "tag":			
 			k = attributes["k"]			
@@ -66,7 +63,7 @@ class XMLHandler( xml.sax.ContentHandler ):
 				# save self.node class to DB	
 
 				# Do a bunch of insert statements into the db schema			
-				cursor = myDB.executeQuery("INSERT INTO osm_nodes (lat, lon, timestamp) VALUES (%s, %s, %s)", (self.node.lat, self.node.lon, self.node.timestamp) )
+				cursor = myDB.executeQuery("INSERT INTO osm_nodes (lat, lon) VALUES (%s, %s, %s)", (self.node.lat, self.node.lon) )
 				nodeID = cursor.lastrowid
 				for tag in self.node.tags:
 					myDB.executeQuery("INSERT INTO osm_tags (node_id, k, v) VALUES (%s, %s, %s)", (nodeID, tag.k, tag.v) )

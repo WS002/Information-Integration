@@ -40,13 +40,17 @@ Install dateutil module with pip:
 
 Schema for the OSM data:
 
-1. CREATE TABLE osm_nodes (ID INT NOT NULL PRIMARY KEY AUTO_INCREMENT,  lat DECIMAL(8,6) NOT NULL, lon DECIMAL (9,6) NOT NULL, timestamp TIMESTAMP NULL DEFAULT NULL );
+1. CREATE TABLE osm_nodes (ID INT NOT NULL PRIMARY KEY AUTO_INCREMENT,  lat DECIMAL(8,6) NOT NULL, lon DECIMAL (9,6) NOT NULL);
 
 2. CREATE TABLE osm_tags (ID INT NOT NULL PRIMARY KEY AUTO_INCREMENT, node_id INT NOT NULL, k VARCHAR(255) NOT NULL, v VARCHAR(255) NOT NULL, FOREIGN KEY (node_id) REFERENCES osm_nodes(ID));
 
 Schema for the Wiki data:
 
 1. CREATE TABLE wiki_articles ( ID INT NOT NULL PRIMARY KEY AUTO_INCREMENT, title VARCHAR(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL, content MEDIUMTEXT CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL);
+
+Schema for the Foursquare data:
+
+1.CREATE TABLE foursquare_venues (ID INT NOT NULL PRIMARY KEY AUTO_INCREMENT, name VARCHAR(255) NOT NULL, lat DECIMAL(8,6) NOT NULL, lng DECIMAL(9,6) NOT NULL, category VARCHAR(255), checkinsCount INT NOT NULL, description TEXT)
 
 *********************************** DATABASE ************************************************************************************************
 
