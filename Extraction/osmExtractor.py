@@ -31,6 +31,7 @@ class Node:
 
 	def addTag(self, tag):
 		self.tags.append(tag)
+		self.saveToDB = 1;
 
 class XMLHandler( xml.sax.ContentHandler ):
 	def __init__(self):
@@ -44,29 +45,34 @@ class XMLHandler( xml.sax.ContentHandler ):
 		if tag == "node":			
 			lat = attributes["lat"]
 			lon = attributes["lon"]
+			self.node = Node(lat, lon);
 
-		elif tag == "tag":			
-			k = attributes["k"]			
-			v = attributes["v"]
-			#Extract only tourism nodes
-			possibleTourismValues = ('aquarium', 'attraction', 'gallery', 'museum', 'theme_park', 'zoo', 'view_point')
-			if k == "tourism" and v in possibleTourismValues:
-				self.node.saveToDB = 1
-			self.node.addTag(Tag(k, v))
+		elif tag == "tag":
+			if self.node:
+				k = attributes["k"]
+				v = attributes["v"]
+				#Extract only tourism nodes
+				possibleTourismValues = ('aquarium', 'attraction', 'gallery', 'museum', 'theme_park', 'zoo', 'view_point')
+				if k == "tourism" and v in possibleTourismValues:
+					self.node.saveToDB = 1
+				self.node.addTag(Tag(k, v))
 
 
 	# Call when an elements ends
 	def endElement(self, tag):
 		if tag == "node":
-			if self.node.saveToDB == 1:				
-				print "End of node. Node contains tourism tag with the right values, save to DB!"
+			if self.node and self.node.saveToDB == 1:
+				#print "End of node. Node contains tourism tag with the right values, save to DB!"
 				# save self.node class to DB	
-
-				# Do a bunch of insert statements into the db schema			
-				cursor = myDB.executeQuery("INSERT INTO osm_nodes (lat, lon) VALUES (%s, %s, %s)", (self.node.lat, self.node.lon) )
-				nodeID = cursor.lastrowid
-				for tag in self.node.tags:
-					myDB.executeQuery("INSERT INTO osm_tags (node_id, k, v) VALUES (%s, %s, %s)", (nodeID, tag.k, tag.v) )
+				try:
+					# Do a bunch of insert statements into the db schema
+					cursor = myDB.executeQuery("INSERT INTO osm_nodes (lat, lon) VALUES (%s, %s)", (self.node.lat, self.node.lon) )
+					nodeID = cursor.lastrowid
+					for tag in self.node.tags:
+						myDB.executeQuery("INSERT INTO osm_tags (node_id, k, v) VALUES (%s, %s, %s)", (nodeID, tag.k, tag.v) )
+				except Exception as e:
+					print tag.k, tag.v, e
+			self.node = ""
 							
 	
 
