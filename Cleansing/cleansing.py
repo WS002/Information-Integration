@@ -55,8 +55,9 @@ def _compare(data, windowSize):
 	duplicateCandidates = []
 
 	for index, item in enumerate(data):	
-		if index+windowSize < len(data):			
-			for secondItem in data[(index+1):(index+windowSize)]:	
+		if index+windowSize < len(data):
+			duplicateFound = 0			
+			for i, secondItem in enumerate(data[(index+1):(index+windowSize)]):	
 				euDistance = -1
 				levenshteinDistance = -1
 				if item[1][2] is not None and item[1][3] is not None and secondItem[1][2] is not None and secondItem[1][3] is not None:		
@@ -74,12 +75,23 @@ def _compare(data, windowSize):
 					if euDistance > -1 and levenshteinDistance > -1:
 						if int(euDistance * floatingPointThreshold) == 0 and levenshteinDistance >= levenshteinThreshold:
 							duplicateCandidates.append([item, secondItem])
+							del data[index]
+							del data[i]
+							duplicateFound = 1
 					elif euDistance > -1:
 						if int(euDistance * floatingPointThreshold) == 0:
 							duplicateCandidates.append([item, secondItem])
+							del data[index]
+							del data[i]
+							duplicateFound = 1
 					elif levenshteinDistance > -1 and levenshteinDistance >= levenshteinThreshold:
 							duplicateCandidates.append([item, secondItem])
-
+							del data[index]
+							del data[i]
+							duplicateFound = 1
+							
+			if duplicateFound == 1:
+				continue
 	return duplicateCandidates
 
 
@@ -162,7 +174,7 @@ def _merge(duplicates):
 			keys += ', description'
 
 		print "Executing ... "
-		print "INSERT INTO matched_schema ("+keys+") VALUES ("+''.join(values)+")" 
+		print "INSERT INTO matched_schema ("+keys+") VALUES ("+', '.join(values)+")" 
 		sql="INSERT INTO matched_schema ("+keys+") VALUES ("+valueString+")"
 		myDB.executeQuery(sql, values)		
 
