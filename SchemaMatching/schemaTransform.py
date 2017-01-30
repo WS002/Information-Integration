@@ -166,7 +166,7 @@ if __name__ == "__main__":
 	schemaMatcher.source['data'] = sourceSchema['data']
 
 	print " "
-	print "Best matching elements for source table [" + sourceTable + "] [" + secondarySourceTable + "] and target table " + targetTable + "]"
+	print "Best matching elements for source table [" + sourceTable + "] [" + secondarySourceTable + "] and target table [" + targetTable + "]"
 	print " "
 	
 	

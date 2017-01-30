@@ -83,7 +83,6 @@ class Matcher:
 			pairMap[sourceElement] = []
 			for targetElement in self.target['elements']:
 				
-
 				sourceData =  self.source['data'][sourceIndex]
 				targetData = self.target['data'][targetIndex]
 				if not isinstance(sourceData, basestring):

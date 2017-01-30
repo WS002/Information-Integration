@@ -82,7 +82,8 @@ if (__name__ == "__main__"):
     parser.setContentHandler(Handler)
 
     filepath = "dewiki-20161101-pages-meta-current.xml.bz2"
-    realfile = bz2.BZ2File(filepath)
+    #realfile = bz2.BZ2File(filepath)
+    realfile = "dewiki-latest-pages-articles.xml"
     start = datetime.now()
     parser.parse(realfile)
     print "Passed file in", datetime.now() - start

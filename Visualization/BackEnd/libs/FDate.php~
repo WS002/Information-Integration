@@ -1,0 +1,152 @@
+ <?php 
+
+class FDate {
+
+	public $year;
+	public $month;
+	public $day;
+	public $hour;
+	public $date;
+	public $time;
+
+	function __construct($date)
+   	{		
+		$this->date = $date;
+		$time = strtotime($date);
+
+		$this->time = $time;
+		$this->year = gmdate('Y', $time);
+		$this->month = gmdate('n', $time);
+		$this->day = gmdate('j', $time);
+		$this->hour = gmdate('G', $time);
+   	}
+
+	function constructFromTime($time)
+	{
+		$this->time = $time;
+		$this->year = gmdate('Y', $time);
+		$this->month = gmdate('n', $time);
+		$this->day = gmdate('j', $time);
+		$this->hour = gmdate('G', $time);
+	}
+
+	function getPrevHour()
+	{
+		if($this->hour == 5) {
+			$prevHour = $this->time - 3600 - 86400;
+		}else if($this->hour == 0) {
+			$prevHour = $this->time - 3600 + 86400;
+		}else {
+			$prevHour = $this->time - 3600;
+		}
+
+		return $prevHour;
+	}
+
+
+	function hoursUntilNextDay()
+	{	
+		if($this->hour >= 0 and $this->hour < 5)
+		{
+			$hoursUntilEndOfDay = 4 - $this->hour;
+		}else{
+			$hoursUntilEndOfDay = 28 - $this->hour;
+		}
+
+		$hoursInSeconds = array();
+		// Add current date in seconds to the array
+		$hoursInSeconds[] = $this->time;
+		$nextDate = $hoursInSeconds[0];
+
+		while($hoursUntilEndOfDay > 0) {
+			//Add time in seconds of the following hours until the end of the day. 3600 seconds in an hour.
+			$nextDate += 3600;
+		
+			//Assure that the end of the day is at 5 am.
+			if(date('j', $nextDate) != $this->day and date('G', $nextDate) != 0)
+			{
+		
+				// 86400 seconds in a day
+				$nextDate -= 86400; 
+					
+			}
+
+			$hoursInSeconds[] = $nextDate;
+			$hoursUntilEndOfDay--;
+		}
+
+		return $hoursInSeconds;
+	}
+
+	function hoursBeforePrevDay()
+	{	
+		if($this->hour >= 0 and $this->hour < 5)
+		{
+
+			$hoursBeforePrevDay = 19 + $this->hour;
+		}else{
+			$hoursBeforePrevDay = $this->hour - 5;
+		}
+
+		$hoursInSeconds = array();
+		// Add current date in seconds to the array
+		$hoursInSeconds[] = $this->time;
+		$prevDate = $hoursInSeconds[0];
+
+		while($hoursBeforePrevDay > 0) {
+			//Add time in seconds of the following hours until the end of the day. 3600 seconds in an hour.
+			$prevDate -= 3600;
+			
+			//Assure that the end of the day is at 5 am.
+			if(date('j', $prevDate) != $this->day or date('G', $prevDate) == 0)
+			{
+				// 86400 seconds in a day
+				$prevDate += 86400; 
+			
+			}
+
+			$hoursInSeconds[] = $prevDate;
+			$hoursBeforePrevDay--;
+		}
+
+		return $hoursInSeconds;
+	}
+
+
+	function daysUntilNextMonth()
+	{	
+		$currentDay = $this->time;
+		$currentMonth = $this->month;
+		$daysUntilNextMonth = array();
+
+		while($currentMonth == $this->month)
+		{			 
+			$daysUntilNextMonth[] = $currentDay;
+			$currentDay +=  86400;
+			$currentMonth = gmdate('m', $currentDay);
+		}
+
+		return $daysUntilNextMonth;
+		
+	}
+
+	function daysBeforePrevMonth()
+	{	
+		$currentDay = $this->time;
+		$currentMonth = $this->month;
+		$daysBeforePrevMonth = array();
+
+		while($currentMonth == $this->month)
+		{
+			$daysBeforePrevMonth[] = $currentDay;
+			$currentDay -=  86400;
+			$currentMonth = gmdate('m', $currentDay);
+		}
+
+		return $daysBeforePrevMonth;
+	}
+
+}
+
+
+?>

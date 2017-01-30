@@ -1,0 +1,818 @@
+d3.historySlider = function(context) {
+	var historySlider = {},
+	    data	    = {},
+	    categories	    = {},
+	    height 	    = context.attr("height") - context.attr("height")/10,
+	    width 	    = context.attr("width") - 10,	
+	    size 	    = [width, height],
+	    nodePadding     = 0,
+	    nodeWidth	    = 0,
+	    opacity 	    = 0.3,
+	    typeEnum = ['monthly', 'daily', 'hourly'],
+	    currentType = 0;
+
+
+	var positionsPerNodeGroup = 0;
+
+	historySlider.movingWindow = {};
+	//Append a defs (for definition) element to your SVG
+	var defs = context.append("defs");
+
+
+	// Size = [ width, height ] of alluvial diagram container
+	historySlider.size = function(_) {
+		if(!arguments.length) {
+			return size;
+		}
+
+		size = _;
+		return historySlider;
+	}
+
+	// data =  { x1: { [{ id, name, hereNow, positions, links: [ {id:"", name: "", hereNow: {count: |NUMBER|}}, {}, {}   ] }, {node2}, .., {nodeN}] }, x2: { }, xN: {}   }   of alluvial diagram container
+	historySlider.data = function(_) {
+		if(!arguments.length) {
+			return data;
+		}
+		
+		data = _;
+		return historySlider;
+	}
+
+	// Padding between nodes
+	historySlider.nodePadding = function(_) {
+		if(!arguments.length) {
+			return nodePadding;
+		}
+
+		nodePadding = _;
+		return historySlider;
+	}
+
+	// The width of each node
+	historySlider.nodeWidth = function(_) {
+		if(!arguments.length) {
+			return nodeWidth;
+		}
+
+		nodeWidth = _;
+		return historySlider;
+	}
+
+	historySlider.categories = function(_) {
+		if(!arguments.length) {
+			return categories;
+		}
+
+		categories = _;
+		return historySlider;
+	}
+
+
+
+	historySlider.type = function(_) {
+		if(!arguments.length) {
+			return currentType;
+		}
+		
+		for(var i in typeEnum) {
+			if(typeEnum[i] == _) {
+				currentType = i;
+				
+			}
+		}
+		
+		return historySlider;
+			
+	}
+
+	historySlider.typeEnum = function(_) {
+		if(!arguments.length) {
+			return typeEnum;
+		}
+		
+		typeEnum = _;
+		
+		return historySlider;
+			
+	}
+
+
+
+	historySlider._positionLink = function(currentXGroup, previousXGroup) {
+		var currentNodes = data[currentXGroup]['data'];
+		var previousNodes = data[previousXGroup]['data'];
+
+		// Calculate links of previousNodes, leading to currentNodes. Save in previousNodes
+
+		for(var i in previousNodes)
+		{
+			var prevNode = previousNodes[i];
+			
+			var pixelsPerCount = parseFloat(prevNode['positions']['height']) / prevNode['hereNow']['count']; 
+			
+			var currentPrevNodeY = prevNode['positions']['y'] + prevNode['positions']['height'];
+			var currentPrevNodeX = prevNode['positions']['x'] + prevNode['positions']['width'];
+
+			for(var i in prevNode['links']) 
+			{
+				var link = {'id': i, 'name': categories[i]['name'], 'hereNow': {'count': prevNode['links'][i] }};
+				prevNode['links'][i] = link;
+				for(var j = 0; j < currentNodes.length; j++)
+				{
+					var currentNode = currentNodes[j];
+					if(link['id'] == currentNode['id']) 
+					{
+						
+						// Save the path code in the link here
+
+						//Calculate edge width
+						var linkWidth = link['hereNow']['count'] * pixelsPerCount;
+						
+						//Calculate startPoint
+						var startPointY = currentPrevNodeY - (linkWidth/2.0);
+
+						//Calculate endPoint
+						var endPointY;
+						if(typeof currentNode['currentLinkY'] != "undefined")
+						{
+							endPointY = currentNode['currentLinkY'] - (linkWidth/2.0);
+						}else{
+							endPointY = currentNode['positions']['y'] + currentNode['positions']['height'] - (linkWidth/2.0); 
+						}
+
+						currentNode['currentLinkY'] = endPointY - (linkWidth/2.0);
+						currentPrevNodeY = startPointY - (linkWidth/2.0);
+						
+						// Save path in link 
+						link['width'] = linkWidth;
+						link['startPoint'] = [currentPrevNodeX, startPointY];
+						link['endPoint'] = [currentNode['positions']['x'], endPointY];
+						link['source-id'] = previousXGroup + ':' + prevNode['id'];
+						link['target-id'] = currentXGroup + ':' + currentNode['id'];
+						link['source'] = prevNode;
+						link['target'] = currentNode;
+
+						var path = d3.path();
+						path.moveTo(link['startPoint'][0], link['startPoint'][1]);
+
+						var controlPointX = link['startPoint'][0] + (parseFloat(link['endPoint'][0] - link['startPoint'][0])/2.0); 
+						path.bezierCurveTo(controlPointX, link['startPoint'][1], controlPointX, link['endPoint'][1], link['endPoint'][0], link['endPoint'][1]);
+						link['path'] = path.toString();
+						
+					}
+
+					
+				}
+			}
+			
+			
+		}
+
+	}
+
+	historySlider._positionNodes = function() {
+	        positionsPerNodeGroup = parseFloat(size[0] - nodeWidth) / (data.length) ;		
+		var index = 0;		
+		var highestSumPerXGroup = 0;
+		
+		for (var xGroup in data) {							
+			
+			var xPosition = index * positionsPerNodeGroup;
+			
+			var sum = 0;
+			// Get the sum of all nodes to calculate percentage per node
+			for(var i = 0; i < data[xGroup]['data'].length; i++)
+			{
+				var node = data[xGroup]['data'][i];									
+				sum += node['hereNow']['count'];
+			}
+			
+			if(sum > highestSumPerXGroup)
+				highestSumPerXGroup = sum;
+
+			
+		}
+
+		for (var xGroup in data) {
+
+			var xPosition = index * positionsPerNodeGroup;
+			
+			// Calculate yPosition for each node based on group percentage
+			// Current Y starts from bottom and decreases to top ( Bottom => Y = height, Top => Y = 0 )
+			// Start from the size - 10% of the size
+			var currentY = size[1];	
+
+			// Y pixels per node percentage
+			var positionsPerNode = parseFloat(size[1] - ((data[xGroup]['data'].length-1) * nodePadding)  ) / 100;
+
+			
+			for(var i = 0; i < data[xGroup]['data'].length; i++)			
+			{
+				
+				var node = data[xGroup]['data'][i];
+				// Flip the Y-axis to start from bottom, considering vertical paddings between nodes as well
+				var nodeHeight = positionsPerNode * ( parseFloat(node['hereNow']['count']) / highestSumPerXGroup) * 100;
+
+				currentY -= nodeHeight;
+				node.positions = {'x': xPosition, 'y': currentY, 'height': nodeHeight, 'width': nodeWidth} ;
+						
+				currentY -= nodePadding;
+			}
+
+			index++;
+		
+		}
+	}
+
+	historySlider._positionLinks = function() {
+		var previousXGroup = -1;		
+
+		// Calculate node links positions
+		for (var xGroup in data) {	
+							
+			if(previousXGroup > -1) {
+				historySlider._positionLink(xGroup, previousXGroup);				
+			}
+		
+			previousXGroup = xGroup;
+			
+		}
+	}
+
+
+	historySlider.drawAlluvialGraph = function() {
+		// Position and draw the nodes
+		historySlider._positionNodes();
+		historySlider._positionLinks();
+		historySlider.drawTimeUnits();
+
+		for (var xGroup in data) {	
+			for(var i = 0; i < data[xGroup]['data'].length; i++)			
+			{
+				var node = data[xGroup]['data'][i];	
+				// draw the nodes
+				context.append("rect")       // attach a rectangle
+				    .attr("x", node['positions']['x'])         // position the left of the rectangle
+				    .attr("y", node['positions']['y'])          // position the top of the rectangle
+				    .attr("clip-path", "url(#ellipse-clip)") // clip the rectangle
+				    .style("fill", categories[node['id']]['color'])   // fill the clipped path with red
+				    .attr("height", node['positions']['height'])    // set the height
+				    .attr("width", node['positions']['width'])    // set the width
+				    .attr("opacity", opacity)
+				    .attr("id", xGroup + ':'+ node['id'])
+				    .attr("clicked", 0)
+				    .on('mouseover', nodeMouseOver).on('mouseout', nodeMouseOut).on('click', nodeOnClick)
+					.append("svg:title").text(function(d, i) { return "Category " + node['name'] + " has " + node['hereNow']['count'] + " people."; });
+;
+										
+
+				// draw the links for this node
+				for(var linkIndex in node['links']) 
+				{
+
+					var link = node['links'][linkIndex];
+					if(typeof link['path'] != "undefined")
+					{
+
+						//////////// Define the color gradient ///////////////
+
+						var linearGradientID = "linear-gradient-" + link['source-id'] + "-" + link["target-id"];
+						//Append a linearGradient element to the defs and give it a unique id
+						var linearGradient = defs.append("linearGradient")
+						    .attr("id", linearGradientID);
+
+
+						//Set the color for the start (0%)
+						linearGradient.append("stop") 
+						    .attr("offset", "0%")   
+						    .attr("stop-color", categories[link['source']['id']]['color']);
+
+						//Set the color for the end (100%)
+						linearGradient.append("stop") 
+						    .attr("offset", "100%")   
+						    .attr("stop-color", categories[link['target']['id']]['color']); 
+						
+						context.append("path")
+						    .attr("d", link['path'])
+						    .attr("opacity", opacity)
+						    .attr('stroke', "url(#"+linearGradientID+")")
+						    .attr('stroke-width', link['width'])
+						    .attr('fill', 'none')
+						    .attr('source-id', link['source-id'])
+						    .attr('target-id', link['target-id'])
+						    .on('mouseover', linkMouseOver)
+						    .on('mouseout', linkMouseOut)
+							.append("svg:title").text(function(d, i) { return link['hereNow']['count']+ " people travel from category " + link['source']['name'] + " to category " + link['target']['name']; });
+
+					}
+				}
+
+			}				
+						
+
+		}
+
+		return historySlider;
+	}
+
+	historySlider._positionPaths = function() {
+		var previousXGroup = -1;	
+		for (var xGroup in data) {	
+			
+			if(previousXGroup > -1) {
+				for(var i = 0; i < data[previousXGroup]['data'].length; i++)			
+				{
+					var prevNode = data[previousXGroup]['data'][i];
+					var prevNodeBottomY = prevNode['positions']['y'] + prevNode['positions']['height'];
+					var prevNodeTopY = prevNode['positions']['y'];
+					var prevNodeX = prevNode['positions']['x'] + prevNode['positions']['width'];
+
+					var currentNode = data[xGroup]['data'][i];						
+					var currentNodeBottomY = currentNode['positions']['y'] + currentNode['positions']['height'];
+					var currentNodeTopY = currentNode['positions']['y'];
+					var currentNodeX = currentNode['positions']['x'];
+					
+					var path = d3.path();
+					path.moveTo(prevNodeX, prevNodeBottomY);
+
+					var controlPointX = prevNodeX + (parseFloat(currentNodeX - prevNodeX)/2.0); 
+					path.bezierCurveTo(controlPointX, prevNodeBottomY, controlPointX, currentNodeBottomY, currentNodeX, currentNodeBottomY);
+					path.lineTo(currentNodeX, currentNodeTopY);
+					path.bezierCurveTo(controlPointX, currentNodeTopY, controlPointX, prevNodeTopY, prevNodeX, prevNodeTopY);
+					path.lineTo(prevNodeX, prevNodeBottomY);
+					var sourceID = previousXGroup + ':' + prevNode['id'];
+					var targetID = xGroup + ':' + currentNode['id'];	
+
+					prevNode['path'] = {'path':path.toString(), 'source-id':  sourceID, 'target-id': targetID, 'source': prevNode, 'target': currentNode};	
+				}
+					
+			}
+			previousXGroup = xGroup;
+			
+	
+		}
+
+	}
+
+
+
+	historySlider.drawMovingWindow = function(x, y) {
+
+		historySlider.movingWindow.startNodeIndex = data.length-1;
+		historySlider.movingWindow.endNodeIndex = data.length;
+		var nodeX = data[data.length-1]['data'][0]['positions']['x'];
+		var width = context.attr('width') - nodeX;
+
+		context.append("rect")       // attach a rectangle
+		    .attr("x", x)         // position the left of the rectangle
+		    .attr("y", 0)          // position the top of the rectangle
+		    .attr("clip-path", "url(#ellipse-clip)") // clip the rectangle
+		    .style("fill", '#FFF')   // fill the clipped path 
+		    .attr("height", y)    // set the height
+		    .attr("width", width)    // set the width
+		    .attr("opacity", 0.2)
+		    .attr('stroke', '#000')
+		    .attr('stroke-width', 3)		    
+		    .on('mouseover', onWindowMouseOver)
+	            .on('mouseout', onWindowMouseOut)
+		    .call(d3.drag().on("start", onWindowDragStart).on("drag", onWindowDrag).on("end",function(){console.log(historySlider.movingWindow)} ));
+		
+		
+	}
+
+	function onWindowMouseOver(d, i) {
+		var _this = d3.select(this); 
+		_this.attr('stroke-width', 3);
+	}
+
+	function onWindowMouseOut(d, i) {
+		var _this = d3.select(this); 
+		_this.attr('stroke-width', 1);		
+	}
+
+	function onWindowDragStart(d, i) {
+		var mouseX = d3.event.x;
+
+		// Range checks
+		if(mouseX > data[data.length-1]['data'][0]['positions']['x']) 
+			mouseX = data[data.length-1]['data'][0]['positions']['x'];
+		if(mouseX < data[0]['data'][0]['positions']['x'])		
+			mouseX = data[0]['data'][0]['positions']['x'];
+
+		var startNodeIndex = historySlider.movingWindow.startNodeIndex;
+		var endNodeIndex = historySlider.movingWindow.endNodeIndex;
+		var startNodeX = data[startNodeIndex]['data'][0]['positions']['x'];
+
+		if(endNodeIndex == data.length)
+			var endNodeX = context.attr('width');
+		else
+			var endNodeX = data[endNodeIndex]['data'][0]['positions']['x'];		
+		
+		if(Math.abs(startNodeX - mouseX) > Math.abs(endNodeX - mouseX)) {
+			// Move right border
+			historySlider.movingWindow.move = 'right';			
+		}else{
+			// Move left border
+			historySlider.movingWindow.move = 'left';
+		}
+
+		console.log(historySlider.movingWindow)
+	}
+
+	function onWindowDrag(d, i) {
+		var _this = d3.select(this); 			
+		var mouseX = d3.event.x;
+
+		// Range checks
+		if(mouseX > data[data.length-1]['data'][0]['positions']['x'])		
+			mouseX = data[data.length-1]['data'][0]['positions']['x'];
+		if(mouseX < data[0]['data'][0]['positions']['x'])		
+			mouseX = data[0]['data'][0]['positions']['x'];
+
+
+		var startNodeIndex = historySlider.movingWindow.startNodeIndex;
+		var endNodeIndex = historySlider.movingWindow.endNodeIndex;
+		var startNodeX = data[startNodeIndex]['data'][0]['positions']['x'];
+
+		if(endNodeIndex == data.length)
+			var endNodeX = context.attr('width');
+		else
+			var endNodeX = data[endNodeIndex]['data'][0]['positions']['x'];
+
+		var move = historySlider.movingWindow.move;
+		
+		if(move == 'right') {	
+			//Closer to the right border, extend rect width
+			var newEndNodeIndex = Math.floor(mouseX / positionsPerNodeGroup);
+			var newEndX = data[newEndNodeIndex]['data'][0]['positions']['x'];
+			//Special case for the last node. 
+
+			mouseX = d3.event.x;			
+			if(mouseX > context.attr('width')) {
+				newEndX = context.attr('width');			
+				newEndNodeIndex++;
+			}
+
+			var newWidth = Math.abs(newEndX - startNodeX);		
+			if(newWidth > 0 && startNodeX < newEndX) {				
+				_this.attr('width', newWidth);
+				historySlider.movingWindow.endNodeIndex = newEndNodeIndex;
+		
+			}
+		}else {
+			//Closer to the left border, move X and extend rect width
+			var newStartNodeIndex = Math.floor(mouseX / positionsPerNodeGroup);
+			var newStartX = data[newStartNodeIndex]['data'][0]['positions']['x'];
+			
+			var newWidth = Math.abs(endNodeX - newStartX);	
+
+			if(newWidth > 0 && newStartX < endNodeX) {
+				
+				_this.attr('x', newStartX);
+				_this.attr('width', newWidth);
+				historySlider.movingWindow.startNodeIndex = newStartNodeIndex;
+
+			}
+			
+		}
+
+	}
+
+	historySlider.formatDate = function (timestamp) {
+	    var d = new Date(timestamp * 1000);
+	    var timezoneOffset = d.getTimezoneOffset();
+
+	    var gmTimestamp = (timestamp + timezoneOffset * 60) * 1000;
+
+	    var gmDate = new Date(gmTimestamp);
+
+	    var month = '' + (gmDate.getMonth() + 1),
+		day = '' + gmDate.getDate(),
+		year = gmDate.getFullYear();
+		hour = gmDate.getHours();	
+		         	          
+	   
+	    if (month.length < 2) month = '0' + month;
+	    if (day.length < 2) day = '0' + day;
+
+	    var formattedDate = [year, month, day].join('-');
+		formattedDate += ' ' + [hour, '00', '00'].join(':');
+		
+	   
+	    return {'formattedDate': formattedDate, 'date': gmDate};
+	}
+
+	historySlider.drawTimeUnits = function() {
+		var xIndex = 0;
+
+		for (var xGroup in data) {	
+
+			var date = data[xGroup]['timestamp'];
+			var textX = 0;
+			var textWidth = 0;
+			//Create a dummy text field to figure out the width of the text, before appending it
+			var formattedDate = historySlider.formatDate(date);
+			var textString = '';
+
+						
+			if(formattedDate['date'].getHours() == 5) {
+				var month = formattedDate['date'].getMonth() + 1;
+				textString = month + '-' + formattedDate['date'].getDate();
+			}else{
+				textString = formattedDate['date'].getHours();			
+			}
+	
+			var y = context.attr("height") - context.attr("height")/25;			
+			var x = data[xGroup]['data'][0]['positions']['x'];
+			if(xIndex == data.length-1) {				
+				historySlider.drawMovingWindow(x, context.attr("height"));			
+			}	
+
+			
+							
+			context.append("text")				  
+				    .text(textString)
+				    .attr("text-anchor", "middle")
+				    .attr("transform", "translate("+x+", "+y+") rotate(90)")
+				    .attr("font-family", "sans-serif")
+				    .attr("font-size", "10px")
+	 			    .attr("fill", "white");
+			xIndex++;
+		}
+		
+		
+		return historySlider;
+	}
+
+	historySlider.drawStreamGraph = function() {
+		historySlider._positionNodes();
+		historySlider._positionPaths();
+		historySlider.drawTimeUnits();
+
+		for (var xGroup in data) {
+			for(var i = 0; i < data[xGroup]['data'].length; i++)			
+			{
+				var node = data[xGroup]['data'][i];
+				if(xGroup == data.length-1) {
+					node['positions']['width'] = context.attr('width') - data[xGroup]['data'][0]['positions']['x'];
+				}
+				// draw the nodes
+				context.append("rect")       // attach a rectangle
+				    .attr("x", node['positions']['x'])         // position the left of the rectangle
+				    .attr("y", node['positions']['y'])          // position the top of the rectangle
+				    .attr("clip-path", "url(#ellipse-clip)") // clip the rectangle
+				    .style("fill", categories[node['id']]['color'])   // fill the clipped path 
+				    .attr("height", node['positions']['height'])    // set the height
+				    .attr("width", node['positions']['width'])    // set the width
+				    .attr("opacity", opacity)
+				    .attr("id", xGroup + ':'+ node['id'])
+				    .attr("clicked", 0)
+				    .attr("sourceClicked", 0)
+				    .on('mouseover', nodeMouseOver).on('mouseout', nodeMouseOut)
+				    .on('click', nodeOnClick)
+					.append("svg:title").text(function(d, i) { return "Category " + node['name'] + " has " + node['hereNow']['count'] + " people."; }); 	
+
+									
+
+				if(typeof node['path'] != "undefined")
+				{
+					var link = node['path'];
+					context.append("path")
+						    .attr("d", link['path'])
+						    .attr("opacity", opacity)
+						    .attr('fill', categories[node['id']]['color'])
+						    .attr('source-id', link['source-id'])
+						    .attr('target-id', link['target-id'])
+						    .on('mouseover', linkMouseOver)
+						    .on('mouseout', linkMouseOut)
+							.append("svg:title").text(function(d, i) { return "Category " + node['name'] + " has " + node['hereNow']['count'] + " people."; });
+
+				}											
+
+			}											
+
+		}
+
+		return historySlider;
+
+	}
+
+//////////// EVENTS //////////////////////
+
+	function linkMouseOver(d, i) {   
+		var link = d3.select(this);
+
+		if(typeof link.attr('source-id') != "undefined") {
+			var sourceNode = d3.select("rect[id='"+link.attr('source-id')+"']");	
+			if(sourceNode.attr('clicked') == 1) {
+				return 0;
+			}
+
+		}
+		if(typeof link.attr('target-id') != "undefined") {
+			var targetNode = d3.select("rect[id='"+link.attr('target-id')+"']");
+			if(targetNode.attr('clicked') == 1) {
+				return 0;
+			}
+		}
+
+		link.attr('opacity', 1);
+
+		if(sourceNode != "undefined")
+			sourceNode.attr('opacity', 1);
+
+		if(targetNode != "undefined")
+			targetNode.attr('opacity', 1);
+		
+	}
+
+	function linkMouseOut(d, i) {   
+		var link = d3.select(this);
+		if(typeof link.attr('source-id') != "undefined") {
+			var sourceNode = d3.select("rect[id='"+link.attr('source-id')+"']");	
+			if(sourceNode.attr('clicked') == 1) {
+				return 0;
+			}
+
+		}
+		if(typeof link.attr('target-id') != "undefined") {
+			var targetNode = d3.select("rect[id='"+link.attr('target-id')+"']");
+			if(targetNode.attr('clicked') == 1) {
+				return 0;
+			}
+		}
+	
+
+		link.attr('opacity', opacity);
+
+		if(sourceNode != "undefined")
+			sourceNode.attr('opacity', opacity);
+
+		if(targetNode != "undefined")
+			targetNode.attr('opacity', opacity);
+		
+		
+	}
+
+	function nodeMouseOver(d, i) {
+		
+
+		var node = d3.select(this);
+		var nodeXGroup = node.attr('id').split(':')[0];
+		var nodeID = node.attr('id').split(':')[1];
+		
+		if(node.attr('clicked') == 1)
+			return;	
+
+		node.attr('opacity', 1);
+		
+		context.selectAll("path[source-id='"+node.attr('id') +"']" )
+		       .each(function(d,i) 
+			{ 
+				var targetNodeID = d3.select(this).attr('target-id');
+				if(typeof targetNodeID != "undefined") {
+					targetNode = context.select("rect[id='"+targetNodeID+"']");
+					if(targetNode.attr('clicked') == 0)
+						targetNode.attr('opacity', 1);
+
+				}
+			})
+			.attr('opacity', 1);
+
+
+		
+		context.selectAll("path[target-id='"+node.attr('id') +"']" )
+		       .each(function(d,i) 
+			{ 
+				var sourceNodeID = d3.select(this).attr('source-id');
+				if(typeof sourceNodeID != "undefined") {
+					sourceNode = context.select("rect[id='"+sourceNodeID+"']");
+					if(sourceNode.attr('clicked') == 0)
+						sourceNode.attr('opacity', 1);
+	
+				}
+			})
+		       .attr('opacity', 1);
+
+		
+	}
+
+	function nodeMouseOut(d, i) {
+		
+		var node = d3.select(this);
+		var nodeXGroup = node.attr('id').split(':')[0];
+		var nodeID = node.attr('id').split(':')[1];
+		
+		if(node.attr('clicked') == 1)
+			return;	
+
+		node.attr('opacity', opacity);
+		
+
+		context.selectAll("path[source-id='"+node.attr('id') +"']" )
+		       .each(function(d,i) 
+			{ 
+				var targetNodeID = d3.select(this).attr('target-id');
+				if(typeof targetNodeID != "undefined") {
+					targetNode = context.select("rect[id='"+targetNodeID+"']");
+					if(targetNode.attr('clicked') == 0)
+						targetNode.attr('opacity', opacity);
+
+				}
+			})
+			.attr('opacity', opacity);
+
+
+		
+		context.selectAll("path[target-id='"+node.attr('id') +"']" )
+		       .each(function(d,i) 
+			{ 
+				var sourceNodeID = d3.select(this).attr('source-id');
+				if(typeof sourceNodeID != "undefined") {
+					sourceNode = context.select("rect[id='"+sourceNodeID+"']");
+					if(sourceNode.attr('clicked') == 0)
+						sourceNode.attr('opacity', opacity);
+				}
+			})
+		       .attr('opacity', opacity);
+	}
+
+
+	function nodeOnClick(d, i) {
+		var node = d3.select(this);
+		var nodeXGroup = node.attr('id').split(':')[0];
+		var nodeID = node.attr('id').split(':')[1];
+		
+		
+		if(node.attr('clicked') == 0) {
+			node.attr('opacity', 1);
+			node.style("stroke", "red") 
+     			    .style("stroke-width","1px");
+
+			context.selectAll("path[source-id='"+node.attr('id') +"']" )
+			       .each(function(d,i) 
+				{ 
+					var targetNodeID = d3.select(this).attr('target-id');
+					if(typeof targetNodeID != "undefined")
+						context.select("rect[id='"+targetNodeID+"']").attr('opacity', 1).attr('clicked', 1);
+				})
+				.attr('opacity', 1);
+
+
+		
+			context.selectAll("path[target-id='"+node.attr('id') +"']" )
+			       .each(function(d,i) 
+				{ 
+					var sourceNodeID = d3.select(this).attr('source-id');
+					if(typeof sourceNodeID != "undefined")
+						context.select("rect[id='"+sourceNodeID+"']").attr('opacity', 1).attr('clicked', 1);
+				})
+			       .attr('opacity', 1);
+
+			node.attr('clicked', 1);
+			node.attr('sourceClicked', 1);
+		}else {
+			if(node.attr('sourceClicked') == 0)
+				return 0;
+
+
+			node.attr('opacity', opacity);
+			node.style("stroke", null) 
+     			    .style("stroke-width", null);
+
+
+			context.selectAll("path[source-id='"+node.attr('id') +"']" )
+			       .each(function(d,i) 
+				{ 
+					var targetNodeID = d3.select(this).attr('target-id');
+					if(typeof targetNodeID != "undefined")
+						context.select("rect[id='"+targetNodeID+"']").attr('opacity', opacity).attr('clicked', 0);
+				})
+				.attr('opacity', opacity);
+
+
+		
+			context.selectAll("path[target-id='"+node.attr('id') +"']" )
+			       .each(function(d,i) 
+				{ 
+					var sourceNodeID = d3.select(this).attr('source-id');
+					if(typeof sourceNodeID != "undefined")
+						context.select("rect[id='"+sourceNodeID+"']").attr('opacity', opacity).attr('clicked', 0);
+				})
+			       .attr('opacity', opacity);
+		
+			node.attr('clicked', 0);
+		}
+	
+			
+	}
+
+	
+
+///////////////////////////// END OF EVENTS ////////////////////////////
+
+
+
+	return historySlider;
+}

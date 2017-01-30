@@ -92,17 +92,20 @@ def _compare(data, windowSize):
                             del data[index]
                             del data[i]
                             duplicateFound = 1
+			    break
                     elif euDistance > -1:
                         if int(euDistance * floatingPointThreshold) == 0:
                             duplicateCandidates.append([item, secondItem])
                             del data[index]
                             del data[i]
                             duplicateFound = 1
+			    break
                     elif levenshteinDistance > -1 and levenshteinDistance >= levenshteinThreshold:
                             duplicateCandidates.append([item, secondItem])
                             del data[index]
                             del data[i]
                             duplicateFound = 1
+			    break
 
             if duplicateFound == 1:
                 continue
@@ -230,7 +233,8 @@ def sortedNeighbourhood(data):
 
 if __name__ == "__main__":
 
-
+    # Run this with sql="SELECT * FROM matched_schema WHERE lat IS NOT NULL AND lng IS NOT NULL" until no duplicates are found. 
+    #  Then run with sql="SELECT * FROM matched_schema" to merge the wiki articles
     sql="SELECT * FROM matched_schema"
     cursor = myDB.conn.cursor(buffered=True)
     cursor.execute(sql)
